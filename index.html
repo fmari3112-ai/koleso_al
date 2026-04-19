@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Колесо выбора</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #f4f4f5;
+      color: #18181b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .stage {
+      position: relative;
+      width: min(320px, 90vw);
+      aspect-ratio: 1;
+      margin-bottom: 28px;
+    }
+
+    .pointer {
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 22px solid #18181b;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+    }
+
+    .wheel {
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      border: 3px solid #18181b;
+      background: conic-gradient(
+        from 0deg at 50% 50%,
+        #e4e4e7 0deg 60deg,
+        #d4d4d8 60deg 120deg,
+        #e4e4e7 120deg 180deg,
+        #d4d4d8 180deg 240deg,
+        #e4e4e7 240deg 300deg,
+        #d4d4d8 300deg 360deg
+      );
+      transform: rotate(0deg);
+      transition-property: transform;
+      transition-timing-function: cubic-bezier(0.2, 0.85, 0.15, 1.02);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .wheel-inner {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .sector-ray {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      width: 0;
+      height: 50%;
+      transform-origin: bottom center;
+      transform: rotate(var(--mid));
+    }
+
+    .sector-text {
+      position: absolute;
+      left: 0;
+      bottom: var(--radial, 44%);
+      font-size: clamp(9px, 2.5vw, 11px);
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      text-align: center;
+      max-width: min(80px, 25vmin);
+      overflow: hidden;
+      color: #18181b;
+      user-select: none;
+      transform: translateX(-50%) rotate(90deg);
+      transform-origin: center center;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      background: #18181b;
+      color: #fafafa;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 32px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn:hover:not(:disabled) {
+      opacity: 0.92;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .result {
+      margin-top: 28px;
+      min-height: 3em;
+      max-width: 360px;
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    .result:empty {
+      margin-top: 28px;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" aria-live="polite">
+    <div class="pointer" aria-hidden="true"></div>
+    <div id="wheel" class="wheel" role="img" aria-label="Колесо из шести секторов">
+      <div class="wheel-inner" id="labels"></div>
+    </div>
+  </div>
+
+  <button type="button" class="btn" id="spinBtn">Крутить</button>
+  <p class="result" id="result"></p>
+
+  <script>
+    (function () {
+      var SECTORS = [
+        "Нет клиентов",
+        "Разбор",
+        "Идея",
+        "Сценарий",
+        "Ошибки",
+        "Гайд",
+      ];
+
+      var wheel = document.getElementById("wheel");
+      var labelsRoot = document.getElementById("labels");
+      var spinBtn = document.getElementById("spinBtn");
+      var resultEl = document.getElementById("result");
+
+      var currentRotation = 0;
+      var spinning = false;
+
+      function buildLabels() {
+        labelsRoot.innerHTML = "";
+        for (var i = 0; i < SECTORS.length; i++) {
+          var mid = i * 60 + 30;
+          var ray = document.createElement("span");
+          ray.className = "sector-ray";
+          ray.style.setProperty("--mid", mid + "deg");
+          var txt = document.createElement("span");
+          txt.className = "sector-text";
+          txt.textContent = SECTORS[i];
+          ray.appendChild(txt);
+          labelsRoot.appendChild(ray);
+        }
+      }
+
+      function sectorIndexFromRotation(deg) {
+        var r = ((deg % 360) + 360) % 360;
+        var underPointer = (360 - r) % 360;
+        var idx = Math.floor(underPointer / 60);
+        if (idx >= SECTORS.length) idx = SECTORS.length - 1;
+        return idx;
+      }
+
+      function randomInRange(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function spin() {
+        if (spinning) return;
+        spinning = true;
+        spinBtn.disabled = true;
+        resultEl.textContent = "";
+
+        var targetIndex = Math.floor(Math.random() * SECTORS.length);
+        var margin = 4;
+        var sectorStart = targetIndex * 60 + margin;
+        var sectorEnd = (targetIndex + 1) * 60 - margin;
+        var underPointer = randomInRange(sectorStart, sectorEnd);
+
+        var spins = 4 + Math.floor(Math.random() * 3);
+        var curNorm = ((currentRotation % 360) + 360) % 360;
+        var targetNorm = (((360 - underPointer) % 360) + 360) % 360;
+        var deltaMod = (targetNorm - curNorm + 360) % 360;
+        var delta = spins * 360 + deltaMod;
+
+        var durationMs = Math.round(randomInRange(2000, 4000));
+
+        var endRotation = currentRotation + delta;
+
+        wheel.style.transitionDuration = durationMs + "ms";
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            wheel.style.transform = "rotate(" + endRotation + "deg)";
+          });
+        });
+
+        function onEnd(e) {
+          if (e.propertyName !== "transform") return;
+          wheel.removeEventListener("transitionend", onEnd);
+          currentRotation = endRotation;
+          spinning = false;
+          spinBtn.disabled = false;
+
+          var idx = sectorIndexFromRotation(currentRotation);
+          resultEl.textContent = "Вам выпало: " + SECTORS[idx];
+        }
+
+        wheel.addEventListener("transitionend", onEnd);
+      }
+
+      buildLabels();
+      spinBtn.addEventListener("click", spin);
+    })();
+  </script>
+</body>
+</html>
