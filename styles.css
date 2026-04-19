@@ -1,0 +1,490 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: radial-gradient(
+    ellipse 130% 100% at 50% 30%,
+    #1e3a8a 0%,
+    #0f172a 45%,
+    #020617 100%
+  );
+  background-color: #0f172a;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px 28px;
+}
+
+.page-head {
+  text-align: center;
+  max-width: 22rem;
+  margin: 0 auto 20px;
+}
+
+.page-head__title {
+  margin: 0 0 10px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: clamp(1rem, 4vw, 1.3rem);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  color: #f8fafc;
+  text-transform: uppercase;
+}
+
+.page-head__subtitle {
+  margin: 0;
+  font-size: clamp(0.8125rem, 2.8vw, 0.9375rem);
+  font-weight: 400;
+  line-height: 1.55;
+  color: #cbd5f5;
+}
+
+.stage {
+  position: relative;
+  width: min(320px, 90vw);
+  aspect-ratio: 1;
+  margin-bottom: 20px;
+}
+
+.pointer-wrap {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 0 10px rgba(250, 204, 21, 0.35));
+}
+
+.pointer {
+  width: 22px;
+  height: 36px;
+  background: #fde047;
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+}
+
+.spin-hint {
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.wheel {
+  container-type: size;
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(147, 197, 253, 0.35);
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    #1e3a8a 0deg 60deg,
+    #1e40af 60deg 120deg,
+    #2563eb 120deg 180deg,
+    #3b82f6 180deg 240deg,
+    #1e3a8a 240deg 300deg,
+    #1e40af 300deg 360deg
+  );
+  transform: rotate(0deg);
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.2, 0.85, 0.15, 1.02);
+  box-shadow:
+    0 0 20px rgba(96, 165, 250, 0.4),
+    0 0 60px rgba(59, 130, 246, 0.25),
+    0 8px 32px rgba(0, 0, 0, 0.45);
+  /* visible: краевые лампочки выступают за окружность диска */
+  overflow: visible;
+}
+
+.wheel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(255, 255, 255, 0.06) 38%,
+    transparent 62%
+  );
+}
+
+/*
+ * Центральная подсветка: без чёткой границы — только размытые слои
+ * (яркое ядро → плавно в прозрачность, как свет за матовым стеклом).
+ */
+.wheel-center-bulb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 112px;
+  height: 112px;
+  margin: -56px 0 0 -56px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  animation: wheel-center-glow 2.2s ease-in-out infinite;
+}
+
+/* Широкий мягкий ореол */
+.wheel-center-bulb::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 118%;
+  height: 118%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 48% 44%,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(255, 255, 255, 0.35) 32%,
+    rgba(255, 255, 255, 0.12) 52%,
+    rgba(255, 255, 255, 0.04) 68%,
+    transparent 78%
+  );
+  filter: blur(34px);
+  z-index: 0;
+}
+
+/* Ярче в центре, но тоже размыто — без «обода» круга */
+.wheel-center-bulb::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 46% 40%,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 255, 255, 1) 18%,
+    rgba(255, 255, 255, 0.69) 38%,
+    rgba(255, 255, 255, 0.23) 58%,
+    rgba(255, 255, 255, 0.06) 72%,
+    transparent 82%
+  );
+  filter: blur(14px);
+  z-index: 1;
+}
+
+@keyframes wheel-center-glow {
+  0%,
+  100% {
+    opacity: 1;
+    filter: brightness(1.95) saturate(0.2);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(2.38) saturate(0.12);
+  }
+}
+
+.wheel-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Лампочки на стыках секторов (углы как у conic-gradient: от вершины по часовой) */
+.wheel-rim-lights {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3;
+  /* центр лампочки снаружи диска: радиус диска + вылет (~половина диаметра + зазор) */
+  --bulb-r: calc(50cqmin + 6px);
+}
+
+.wheel-bulb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 32% 32%,
+    #ffffff 0%,
+    #fffef5 18%,
+    #fef9c3 35%,
+    #fde047 68%,
+    #ca8a04 100%
+  );
+  box-shadow:
+    0 0 6px #fffbeb,
+    0 0 14px rgba(254, 249, 195, 0.95),
+    0 0 26px rgba(250, 204, 21, 0.9),
+    0 0 40px rgba(234, 179, 8, 0.65);
+  transform: rotate(var(--bulb-angle, 0deg)) translateY(calc(-1 * var(--bulb-r)));
+  animation: wheel-bulb-glow 2.4s ease-in-out infinite;
+}
+
+.wheel-bulb:nth-child(1) {
+  --bulb-angle: 0deg;
+  animation-delay: 0s;
+}
+.wheel-bulb:nth-child(2) {
+  --bulb-angle: 60deg;
+  animation-delay: 0.35s;
+}
+.wheel-bulb:nth-child(3) {
+  --bulb-angle: 120deg;
+  animation-delay: 0.7s;
+}
+.wheel-bulb:nth-child(4) {
+  --bulb-angle: 180deg;
+  animation-delay: 1.05s;
+}
+.wheel-bulb:nth-child(5) {
+  --bulb-angle: 240deg;
+  animation-delay: 1.4s;
+}
+.wheel-bulb:nth-child(6) {
+  --bulb-angle: 300deg;
+  animation-delay: 1.75s;
+}
+
+@keyframes wheel-bulb-glow {
+  0%,
+  100% {
+    opacity: 0.82;
+    filter: brightness(1);
+    box-shadow:
+      0 0 5px #fffbeb,
+      0 0 12px rgba(254, 249, 195, 0.85),
+      0 0 22px rgba(250, 204, 21, 0.75),
+      0 0 34px rgba(234, 179, 8, 0.45);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.18);
+    box-shadow:
+      0 0 8px #ffffff,
+      0 0 18px rgba(254, 249, 195, 1),
+      0 0 32px rgba(250, 204, 21, 1),
+      0 0 48px rgba(234, 179, 8, 0.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel-center-bulb {
+    animation: none;
+    opacity: 1;
+    filter: brightness(2.18) saturate(0.18);
+  }
+
+  .wheel-bulb {
+    animation: none;
+    opacity: 0.95;
+    filter: brightness(1.1);
+    box-shadow:
+      0 0 6px #fffbeb,
+      0 0 16px rgba(254, 249, 195, 0.9),
+      0 0 28px rgba(250, 204, 21, 0.85),
+      0 0 40px rgba(234, 179, 8, 0.55);
+  }
+}
+
+/* Transform в JS: translate(-50%,-50%) rotate(angle-90°) translateX(R) — подпись вдоль биссектрисы сектора */
+.sector-text {
+  position: absolute;
+  box-sizing: border-box;
+  width: 96px;
+  max-width: 96px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: clamp(8px, 2.2vw, 10px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 10px rgba(15, 23, 42, 0.35);
+  user-select: none;
+}
+
+.btn {
+  appearance: none;
+  border: none;
+  background: #22c55e;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px 32px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: #16a34a;
+  opacity: 1;
+  box-shadow:
+    0 4px 28px rgba(34, 197, 94, 0.55),
+    0 0 32px rgba(34, 197, 94, 0.3);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+a.btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.modal.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  cursor: pointer;
+}
+
+.modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+  background: #fafafa;
+  color: #18181b;
+  border-radius: 12px;
+  padding: 22px 22px 18px;
+  border: 1px solid #e4e4e7;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+
+.modal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #52525b;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.modal__close:hover {
+  background: #e4e4e7;
+  color: #18181b;
+}
+
+.modal__title {
+  margin: 0 40px 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-align: center;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #d4d4d8;
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.modal__text {
+  margin: 16px 0 0;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #18181b;
+}
+
+.modal__hint {
+  margin: 14px 0 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #18181b;
+}
+
+.modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal__actions .modal__btn {
+  width: 100%;
+}
+
+.btn--secondary {
+  background: #fafafa;
+  color: #18181b;
+  border: 2px solid #334155;
+  box-shadow: none;
+}
+
+.btn--secondary:hover:not(:disabled) {
+  opacity: 1;
+  background: #e2e8f0;
+  border-color: #1e293b;
+  box-shadow: none;
+}
